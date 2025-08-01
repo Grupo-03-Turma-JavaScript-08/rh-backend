@@ -1,4 +1,4 @@
-import {Controller,Post, Get, Put, Delete,Body,Param,} from '@nestjs/common';
+import {Controller,Post, Get, Put, Delete,Body,Param, HttpCode, HttpStatus,} from '@nestjs/common';
 import { FuncionarioService } from '../service/funcionario.service';
 import { Funcionario } from '../entitie/funcionario.entity';
 
@@ -26,8 +26,10 @@ export class FuncionarioController {
     update(@Param('id') id: string, @Body() funcionario: Funcionario) {
         return this.service.update(Number(id), funcionario);
     }
+    
 
-    @Delete(':id')
+    @Delete('/:id')
+    @HttpCode(HttpStatus.NO_CONTENT)
     delete(@Param('id') id: string) {
         return this.service.delete(Number(id));
     }

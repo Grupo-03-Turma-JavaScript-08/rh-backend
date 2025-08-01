@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, DeleteResult } from 'typeorm';
 import { Funcionario } from '../entitie/funcionario.entity';
 
 @Injectable()
@@ -8,31 +8,54 @@ export class FuncionarioService {
     constructor(
         @InjectRepository(Funcionario)
         private funcionarioRepository: Repository<Funcionario>,
-    ) {}
+    ) { }
 
-    create(funcionario: Funcionario) {
+    async create(funcionario: Funcionario) {
         const novoFuncionario = this.funcionarioRepository.create(funcionario);
-        return this.funcionarioRepository.save(novoFuncionario);
+        return await this.funcionarioRepository.save(novoFuncionario);
     }
 
-    findAll() {
-        return this.funcionarioRepository.find();
+    async findAll() {
+        return await this.funcionarioRepository.find();
     }
 
-    findById(id: number) {
-        return this.funcionarioRepository.findOneBy({ id });
+    async findById(id: number): Promise<Funcionario> {
+        const funcionario = await this.funcionarioRepository.findOne({
+            where: {
+                id
+            },
+
+        });
+
+        if (!funcionario)
+            throw new HttpException('Funcionario não encontrado', HttpStatus.NOT_FOUND);
+
+        return funcionario;
+
     }
 
-    update(id: number, funcionario: Funcionario) {
-        return this.funcionarioRepository.update(id, funcionario);
+   async update(id: number, funcionario: Funcionario) {
+    const funcionarioExistente = await this.findById(id);
+    if (!funcionarioExistente) {
+        throw new Error('Funcionário não encontrado');
     }
 
-    delete(id: number) {
-        return this.funcionarioRepository.delete(id);
+    const atualizado = { ...funcionarioExistente, ...funcionario };
+    return this.funcionarioRepository.save(atualizado);
+}
+
+
+    async delete(id: number) {
+       const resultado = await this.funcionarioRepository.delete(id);
+       if(resultado.affected === 0){
+        throw new NotFoundException('Funcionario nao encontrado');
+       }
+       return {message: 'Funcionario deletado com sucesso'}
+  
     }
 
-    findAllByCargo(cargo: string) {
-        return this.funcionarioRepository.find({
+    async findAllByCargo(cargo: string): Promise<Funcionario[]> {
+        return await this.funcionarioRepository.find({
             where: { cargo: ILike(`%${cargo}%`) },
         });
     }
